@@ -1028,8 +1028,8 @@ constexpr int unchecked_stoi(std::string_view str, int value = 0) {
 }
 
 struct Password {
-  int min{};
-  int max{};
+  int first{};
+  int second{};
   char c{};
   std::string_view p{};
 };
@@ -1039,11 +1039,11 @@ constexpr auto line_to_password(std::string_view line) {
   auto start = 0u;
   auto end = line.find_first_of('-', start);
 
-  p.min = unchecked_stoi(line.substr(start, end - start));
+  p.first = unchecked_stoi(line.substr(start, end - start));
   start = end + 1;
 
   end = line.find_first_of(' ', start);
-  p.max = unchecked_stoi(line.substr(start, end - start));
+  p.second = unchecked_stoi(line.substr(start, end - start));
   start = end + 1;
 
   p.c = line[start];
@@ -1054,8 +1054,8 @@ constexpr auto line_to_password(std::string_view line) {
   return p;
 }
 
-static_assert(1 == line_to_password("1-3 a: abcde").min);
-static_assert(3 == line_to_password("1-3 a: abcde").max);
+static_assert(1 == line_to_password("1-3 a: abcde").first);
+static_assert(3 == line_to_password("1-3 a: abcde").second);
 static_assert('a' == line_to_password("1-3 a: abcde").c);
 static_assert("abcde" == line_to_password("1-3 a: abcde").p);
 
@@ -1069,13 +1069,8 @@ constexpr auto lines_to_passwords(const auto lines) {
 }
 
 constexpr auto is_valid(const auto &password) {
-  auto count = 0;
-  for (auto pc : password.p) {
-    if (pc == password.c) {
-      ++count;
-    }
-  }
-  return count >= password.min and count <= password.max;
+  return password.p[password.first-1] == password.c ^
+         password.p[password.second-1] == password.c;
 }
 
 constexpr auto valid_count(const auto &passwords) {
