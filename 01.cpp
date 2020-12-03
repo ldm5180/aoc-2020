@@ -1,25 +1,15 @@
 #include <algorithm>
 #include <iterator>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
-#include <utility>
-
-static constexpr std::string_view test_input = R"(1721
-979
-366
-299
-675
-1456)";
 
 constexpr auto line_count(std::string_view input) {
   return 1 + std::count_if(std::begin(input), std::end(input),
                            [](const auto c) { return c == '\n'; });
 }
 
-static_assert(6 == line_count(test_input));
-
-template <auto num_lines>
-constexpr auto lines_array(std::string_view input) {
+template <auto num_lines> constexpr auto lines_array(std::string_view input) {
   std::array<std::string_view, num_lines> lines{};
   std::size_t start{};
   std::size_t end{};
@@ -33,19 +23,10 @@ constexpr auto lines_array(std::string_view input) {
   return lines;
 }
 
-static_assert("1721" == lines_array<line_count(test_input)>(test_input)[0]);
-static_assert("979" == lines_array<line_count(test_input)>(test_input)[1]);
-static_assert("366" == lines_array<line_count(test_input)>(test_input)[2]);
-static_assert("299" == lines_array<line_count(test_input)>(test_input)[3]);
-static_assert("675" == lines_array<line_count(test_input)>(test_input)[4]);
-static_assert("1456" == lines_array<line_count(test_input)>(test_input)[5]);
-
 constexpr int unchecked_stoi(std::string_view str, int value = 0) {
   return str.size() ? unchecked_stoi(str.substr(1), (str[0] - '0') + value * 10)
                     : value;
 }
-
-static_assert(1721 == unchecked_stoi("1721"));
 
 constexpr auto convert_str_array_to_int_array(const auto str_array) {
   std::array<int, std::size(str_array)> int_array{};
@@ -55,32 +36,19 @@ constexpr auto convert_str_array_to_int_array(const auto str_array) {
   return int_array;
 }
 
-constexpr auto sum_2020(auto arr) -> std::pair<int, int> {
+constexpr auto sum_2020(auto arr) -> std::tuple<int, int, int> {
   static_assert(std::is_same_v<int, typename decltype(arr)::value_type>);
   for (auto a : arr) {
-      for (auto b : arr) {
-        if (a + b == 2020) {
-          return {a,b};
+    for (auto b : arr) {
+      for (auto c : arr) {
+        if (a + b + c == 2020) {
+          return {a, b, c};
         }
       }
+    }
   }
-  return {0, 0};
+  return {};
 }
-
-static_assert(std::pair(1721, 299) ==
-              sum_2020(convert_str_array_to_int_array(
-                  lines_array<line_count(test_input)>(test_input))));
-
-constexpr int test_answer() {
-  constexpr auto num_lines = line_count(test_input);
-  constexpr auto lines = lines_array<num_lines>(test_input);
-  constexpr auto ints = convert_str_array_to_int_array(lines);
-  constexpr auto values = sum_2020(ints);
-  constexpr auto result = values.first * values.second;
-  return result;
-}
-
-static_assert(514579 == test_answer());
 
 
 #include <iostream>
@@ -291,11 +259,12 @@ constexpr int answer() {
   constexpr auto lines = lines_array<num_lines>(input);
   constexpr auto ints = convert_str_array_to_int_array(lines);
   constexpr auto values = sum_2020(ints);
-  constexpr auto result = values.first * values.second;
+  constexpr auto result =
+      std::get<0>(values) * std::get<1>(values) * std::get<2>(values);
   return result;
 }
 
 int main() {
   constexpr auto result = answer();
-  std::cout << result << std::endl;
+  std::cout << "01 ---> " << result << std::endl;
 }
