@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdint>
 #include <iterator>
 #include <string_view>
 
@@ -359,7 +360,7 @@ struct Location {
 template<auto right = 3, auto down = 1>
 constexpr auto tree_count() {
   Location loc{.x = right, .y = down};
-  auto count = 0;
+  std::uint64_t count = 0;
 
   constexpr auto num_lines = line_count(input);
   constexpr auto lines = lines_array<num_lines>(input);
@@ -378,6 +379,8 @@ constexpr auto tree_count() {
 
 #include <iostream>
 int main() {
-  constexpr auto answer = tree_count<>();
+  constexpr auto answer = tree_count<1, 1>() * tree_count<3, 1>() *
+                          tree_count<5, 1>() * tree_count<7, 1>() *
+                          tree_count<1, 2>();
   std::cout << "03 ---> " << answer << std::endl;
 }
