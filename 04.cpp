@@ -1,5 +1,9 @@
-#include <string_view>
 #include <algorithm>
+#include <cctype>
+#include <cstdint>
+#include <iterator>
+#include <string_view>
+#include <utility>
 
 constexpr std::string_view input =
     R"(byr:2010 pid:#1bb4d8 eyr:2021 hgt:186cm iyr:2020 ecl:grt
@@ -1072,6 +1076,8 @@ ecl:gry
 hcl:#a97842
 eyr:2028)";
 
+using namespace std::string_view_literals;
+
 constexpr auto passport_count(std::string_view input) {
   auto count = 0;
   for (auto loc = 1ul; loc != std::string_view::npos + 1; ++count, ++loc) {
@@ -1080,7 +1086,8 @@ constexpr auto passport_count(std::string_view input) {
   return count;
 }
 
-template <auto num_passports> constexpr auto passports_array(std::string_view input) {
+template <auto num_passports>
+constexpr auto passports_array(std::string_view input) {
   std::array<std::string_view, num_passports> passports{};
   std::size_t start{};
   std::size_t end{};
@@ -1094,14 +1101,97 @@ template <auto num_passports> constexpr auto passports_array(std::string_view in
   return passports;
 }
 
+constexpr auto make_kv(std::string_view kv)
+    -> std::pair<std::string_view, std::string_view> {
+  const auto sep = kv.find_first_of(':');
+  return {kv.substr(0, sep),
+          kv.substr(sep + 1, kv.find_first_of("\n "sv, sep + 1) - sep - 1)};
+}
+
+constexpr std::uint64_t unchecked_stoi(std::string_view str, int value = 0) {
+  return str.size() ? unchecked_stoi(str.substr(1), (str[0] - '0') + value * 10ul)
+                    : value;
+}
+
+constexpr auto is_valid_eye_color(auto v) {
+  return v == "amb" or v == "blu" or v == "brn" or v == "gry" or v == "grn" or
+         v == "hzl" or v == "oth";
+}
+
+constexpr auto is_valid_passport_id(auto v) {
+  return std::size(v) == 9u and
+         std::all_of(std::begin(v), std::end(v),
+                     [](auto c) { return c >= '0' and c <= '9'; });
+}
+
+constexpr auto is_valid_expiration_year(auto v) {
+  auto y = unchecked_stoi(v);
+  return y >= 2020 and y <= 2030;
+}
+
+constexpr auto is_valid_hair_color(auto v) {
+  return v[0] == '#' and std::size(v) == 7 and
+         std::all_of(std::begin(v) + 1, std::end(v), [](auto c) {
+           return (c >= '0' and c <= '9') or (c >= 'a' and c <= 'f');
+         });
+}
+
+constexpr auto is_valid_birth_year(auto v) {
+  auto y = unchecked_stoi(v);
+  return y >= 1920 and y <= 2002;
+}
+
+constexpr auto is_valid_issue_year(auto v) {
+  auto y = unchecked_stoi(v);
+  return y >= 2010 and y <= 2020;
+}
+
+constexpr auto is_valid_height(auto v) {
+  auto units = v.substr(std::size(v) - 2u);
+  auto n = unchecked_stoi(v.substr(0, std::size(v) - 2u));
+  if (units == "in") {
+    return n >= 59 and n <= 76;
+  } else if (units == "cm") {
+    return n >= 150 and n <= 193;
+  }
+  return false;
+}
+
+constexpr auto valid_kv(const auto kv_pair) {
+  auto [k, v] = kv_pair;
+  if (k == "ecl") {
+    return is_valid_eye_color(v);
+  } else if (k == "pid") {
+    return is_valid_passport_id(v);
+  } else if (k == "eyr") {
+    return is_valid_expiration_year(v);
+  } else if (k == "hcl") {
+    return is_valid_hair_color(v);
+  } else if (k == "byr") {
+    return is_valid_birth_year(v);
+  } else if (k == "iyr") {
+    return is_valid_issue_year(v);
+  } else if (k == "hgt") {
+    return is_valid_height(v);
+  }
+
+  return true;
+}
+
 constexpr auto num_valid(const auto passports) {
   const auto n = std::count_if(
       std::begin(passports), std::end(passports), [](const auto passport) {
         constexpr std::array expected_keys = {"ecl", "pid", "eyr", "hcl",
                                               "byr", "iyr", "hgt"};
         for (auto k : expected_keys) {
-          if (passport.find(k) == std::string_view::npos) {
+          if (auto loc = passport.find(k); loc == std::string_view::npos) {
             return false;
+          } else {
+            auto kv = passport.substr(loc, passport.find_first_of(" \n", loc));
+            auto split_kv = make_kv(kv);
+            if (not valid_kv(split_kv)) {
+              return false;
+            }
           }
         }
         return true;
