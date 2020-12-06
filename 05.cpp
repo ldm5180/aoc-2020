@@ -874,17 +874,21 @@ template <auto num_lines> constexpr auto lines_array(std::string_view input) {
 
 template <auto num_lines>
 constexpr auto
-max_seat_id(const std::array<std::string_view, num_lines> lines) {
+missing_seat_id(const std::array<std::string_view, num_lines> lines) {
   std::array<int, num_lines> seat_ids{};
   std::transform(std::begin(lines), std::end(lines), std::begin(seat_ids),
                  [](auto line) { return seat_id(row(line), seat(line)); });
-  return *std::max_element(std::begin(seat_ids), std::end(seat_ids));
+  std::sort(std::begin(seat_ids), std::end(seat_ids));
+  return *std::adjacent_find(
+             std::begin(seat_ids), std::end(seat_ids),
+             [](const auto a, const auto b) { return b - a > 1; }) +
+         1;
 }
 
 #include <iostream>
 int main() {
   constexpr auto num_lines = line_count(input);
   constexpr auto lines = lines_array<num_lines>(input);
-  constexpr auto answer = max_seat_id(lines);
+  constexpr auto answer = missing_seat_id(lines);
   std::cout << "05 ---> " << answer << std::endl;
 }
