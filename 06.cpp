@@ -2087,12 +2087,22 @@ constexpr auto groups_array(std::string_view input) {
 
 constexpr auto num_unique(const auto group) {
   std::array<char, 26> chars{};
+  auto num_people = 1;
   for (auto c : group) {
     if (c != '\n') {
-      chars[c - 'a'] = 1;
+      ++chars[c - 'a'];
+    } else {
+      ++num_people;
     }
   }
-  return std::accumulate(std::begin(chars), std::end(chars), 0);
+
+  auto result = 0;
+  for (auto c : chars) {
+    if (c == num_people) {
+      ++result;
+    }
+  }
+  return result;
 }
 
 constexpr auto sum_groups(const auto groups) {
